@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kabul</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--tx:#1d1d1b;--mu:#6b6a64;--bd:#e2e0d8;--ac:#1d6b57;--acx:#fff;--warn:#b3261e;--gold:#c8961e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161614;--card:#222220;--tx:#f0efe9;--mu:#a09f97;--bd:#383835;--ac:#4cc3a1;--acx:#0d1f1a;--warn:#ff8a80;--gold:#e5b94a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#161614;--card:#222220;--tx:#f0efe9;--mu:#a09f97;--bd:#383835;--ac:#4cc3a1;--acx:#0d1f1a;--warn:#ff8a80;--gold:#e5b94a;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:12px 14px 40px}
+nav{display:flex;gap:6px;margin-bottom:14px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:6px 0;z-index:5}
+nav button{flex:1;padding:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:inherit;font-weight:600}
+nav button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+h1{margin:4px 0 10px;font-size:24px}
+h2{margin:0 0 10px;font-size:18px}
+.mu{color:var(--mu);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 16px;border-radius:99px;border:1.5px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit;font-weight:600}
+.chip.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.btn{padding:13px 18px;border:0;border-radius:12px;background:var(--ac);color:var(--acx);font:inherit;font-weight:700;width:100%}
+.btn.sec{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.btn.dng{background:transparent;color:var(--warn);border:1px solid var(--bd)}
+.btn:disabled{opacity:.4}
+.row{display:flex;gap:8px;margin-top:10px}
+.row>*{flex:1}
+.sc{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mu);font-weight:600;font-size:13px}
+td:nth-child(2),th:nth-child(2){text-align:left}
+.p1{color:var(--gold);font-weight:800}
+.bar{height:6px;background:var(--bd);border-radius:9px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--ac)}
+.in{display:flex;align-items:center;gap:10px;margin:6px 0}
+.in label{flex:1;font-weight:600}
+.in small{color:var(--mu);font-weight:400}
+input[type=number],input[type=text]{width:100px;padding:10px;border:1.5px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;font-size:18px;text-align:center}
+input[type=text]{width:auto;flex:1;text-align:left;font-size:16px}
+.win{text-align:center;padding:22px 14px}
+.win b{font-size:30px;display:block;margin:6px 0;color:var(--gold)}
+.gh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd);font-size:14px}
+#bn{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:13px;padding:8px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--card);margin-bottom:6px}#bn.warn{border-color:var(--warn)}#bn button{border:0;border-radius:8px;background:var(--ac);color:var(--acx);font:inherit;font-weight:700;padding:7px 10px;white-space:nowrap}
+.x{background:none;border:0;color:var(--warn);font-size:20px;padding:4px 8px}
+</style>
+</head>
+<body>
+<main>
+<h1>Kabul</h1>
+<div id="bn"></div>
+<nav><button id="t0">Partita</button><button id="t1">Storico</button><button id="t2">Giocatori</button></nav>
+<div id="v"></div>
+</main>
+<script>
+var KEY="punteggi-v1";
+var S={players:["Federico","Stefania","Kikko","Miki","Calti","Lisa","Symo","Dimy"],game:null,history:[],sel:[],limit:100};
+var tab=0,draft={},over=null;
+var API=""; // facoltativo: incolla qui l'URL dell'app web Google per averlo già pronto nel file
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+try{var raw=localStorage.getItem(KEY);if(raw){var o=JSON.parse(raw);if(o&&o.players)S=Object.assign(S,o)}}catch(e){}
+S.q=S.q||[];S.history.forEach(function(h){if(!h.id)h.id=uid()});
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(KEY+k)||"";if(v)localStorage.setItem(KEY+k,v);else localStorage.removeItem(KEY+k)}catch(e){}return ""}
+try{var qp=new URLSearchParams(location.search).get("api");if(qp){ls("-api",qp);history.replaceState(null,"",location.pathname)}}catch(e){}
+function api(){return ls("-api")||API}
+function pin(){return ls("-pin")}
+var busy=false,st="",locked=false;
+function banner(){
+  var b=document.getElementById("bn");
+  if(!api()){b.className="";b.innerHTML="<span>Dati solo su questo dispositivo</span>";return}
+  var n=S.q.length;
+  b.className=(st||n)?"warn":"";
+  b.innerHTML="<span>"+(st||(n?"⏳ "+n+" modifiche da inviare":"✓ Sincronizzato con Google Sheet"))+"</span><button onclick=\"pull()\">Aggiorna</button>";
+}
+function sync(op,d){
+  if(!api())return;
+  if(locked&&!pin()){st="🔒 Sola lettura: serve il PIN per salvare";banner();return}
+  d.op=op;S.q.push(d);save();banner();flush();
+}
+async function flush(){
+  if(busy||!api())return true;
+  busy=true;var ok=true;
+  try{
+    while(S.q.length){
+      var d=Object.assign({pin:pin()},S.q[0]);
+      var r=await fetch(api(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)});
+      var j=await r.json();
+      if(j.error==="pin"){st="🔒 PIN errato: modifiche in attesa";ok=false;break}
+      if(j.error)console.error(j.error);
+      S.q.shift();save();
+    }
+    if(ok)st="";
+  }catch(e){st="Offline: invio appena possibile";ok=false}
+  busy=false;banner();return ok;
+}
+async function pull(){
+  if(!api())return;
+  if(!(await flush())||S.q.length)return;
+  try{
+    var j=await (await fetch(api()+"?t="+Date.now())).json();
+    if(!j.players)return;
+    locked=!!j.locked;
+    if(!j.players.length&&!j.history.length){sync("import",{players:S.players,history:S.history});return}
+    var pl=!!(S.live&&S.live.ids&&!S.game),pn=S.history.length;S.players=j.players;S.history=j.history;if(pl&&!j.live&&S.history.length>pn){var hh=S.history[S.history.length-1];over={game:{ids:hh.p.map(function(x){return x.name}),rounds:[hh.p.map(function(x){return x.s})]},n:hh.n}}S.live=j.live||null;navDot();
+    S.sel=S.sel.filter(function(x){return S.players.indexOf(x)>-1});
+    save();banner();
+    var ae=document.activeElement;
+    if(!(tab===0&&S.game)&&!(ae&&ae.tagName==="INPUT"))render();
+  }catch(e){st="Offline: uso i dati del dispositivo";banner()}
+}
+function navDot(){var b=document.getElementById("t0");if(b)b.textContent="Partita"+((api()&&S.live&&S.live.ids)?" 🔴":"")}
+function live(){sync("setLive",{game:JSON.parse(JSON.stringify(S.game))})}
+function vLive(){
+  var g=S.live,t=totals(g),r=ranks(t),lim=g.limit||100;
+  var order=g.ids.map(function(_,i){return i}).sort(function(a,b){return t[a]-t[b]||a-b});
+  var h='<div class="card"><h2>🔴 Partita in corso</h2><div class="mu" style="margin-bottom:8px">Dopo '+g.rounds.length+' turni · si chiude a '+lim+' · si aggiorna da sola</div><div class="sc"><table><tr><th>#</th><th>Giocatore</th><th>Totale</th><th>Ultimo</th></tr>';
+  order.forEach(function(i){var last=g.rounds.length?g.rounds[g.rounds.length-1][i]:"–";h+='<tr><td class="'+(r[i]===1?"p1":"")+'">'+r[i]+'</td><td>'+esc(g.ids[i])+'<div class="bar"><i style="width:'+Math.min(100,Math.max(0,100*t[i]/lim))+'%"></i></div></td><td><b>'+t[i]+'</b></td><td class="mu">'+last+'</td></tr>'});
+  return h+'</table></div><div class="row"><button class="btn sec" onclick="takeover()">Gestisci da questo dispositivo</button></div></div>';
+}
+function takeover(){
+  if(locked&&!pin()){alert("Serve il PIN per gestire la partita");return}
+  if(!confirm("Gestire la partita da questo dispositivo? Chi la sta segnando ora non dovrebbe più inserire punti."))return;
+  S.game=JSON.parse(JSON.stringify(S.live));draft={};save();render();
+}
+function setApi(){ls("-api",document.getElementById("au").value.trim());ls("-pin",document.getElementById("ap").value.trim());st="";banner();pull();render()}
+function shareLink(){
+  if(location.protocol==="file:"){alert("Prima metti l’app online (es. GitHub Pages), poi copia il link da lì.");return}
+  var u=location.origin+location.pathname+"?api="+encodeURIComponent(api());
+  if(navigator.clipboard)navigator.clipboard.writeText(u).then(function(){alert("Link copiato: mandalo agli amici")},function(){prompt("Copia:",u)});else prompt("Copia:",u);
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function totals(g){return g.ids.map(function(n,i){return g.rounds.reduce(function(a,r){return a+(r[i]||0)},0)})}
+function ranks(t){return t.map(function(x){return 1+t.filter(function(y){return y<x}).length})}
+function go(i){tab=i;render()}
+function render(){
+  for(var i=0;i<3;i++)document.getElementById("t"+i).className=i===tab?"on":"";navDot();
+  document.getElementById("v").innerHTML=[vGame,vHist,vPlayers][tab]();
+}
+for(let i=0;i<3;i++)document.getElementById("t"+i).onclick=function(){go(i)};
+
+function vGame(){
+  if(over)return vOver();
+  if(!S.game&&S.live&&S.live.ids)return vLive();
+  if(!S.game)return vSetup();
+  var g=S.game,t=totals(g),r=ranks(t),n=g.rounds.length+1;if(!g.limit)g.limit=100;
+  var order=g.ids.map(function(_,i){return i}).sort(function(a,b){return t[a]-t[b]||a-b});
+  var h='<div class="card"><h2>Classifica · dopo '+g.rounds.length+' turni</h2><div class="sc"><table><tr><th>#</th><th>Giocatore</th><th>Totale</th><th>Ultimo</th></tr>';
+  order.forEach(function(i){
+    var last=g.rounds.length?g.rounds[g.rounds.length-1][i]:"–";
+    h+='<tr><td class="'+(r[i]===1?"p1":"")+'">'+r[i]+'</td><td>'+esc(g.ids[i])+'<div class="bar"><i style="width:'+Math.min(100,Math.max(0,100*t[i]/g.limit))+'%"></i></div></td><td><b>'+t[i]+'</b></td><td class="mu">'+last+'</td></tr>'});
+  h+='</table></div><div class="mu" style="margin-top:8px">Il gioco finisce a <input type="number" inputmode="numeric" value="'+g.limit+'" style="width:70px;font-size:15px;padding:4px" onchange="setLim(this.value)"> punti: vince chi ha meno.</div></div>';
+  h+='<div class="card"><h2>Turno '+n+'</h2>';
+  g.ids.forEach(function(nm,i){
+    h+='<div class="in"><label>'+esc(nm)+' <small>('+t[i]+')</small></label><input type="number" inputmode="numeric" id="s'+i+'" value="'+(draft[i]!=null?draft[i]:"")+'" oninput="draft['+i+']=this.value" onkeydown="if(event.key===\'Enter\'){var e=document.getElementById(\'s'+(i+1)+'\');e?e.focus():addRound()}"></div>'});
+  h+='<button class="btn" onclick="addRound()">Conferma turno</button><div class="row"><button class="btn sec" onclick="undo()"'+(g.rounds.length?"":" disabled")+'>Annulla ultimo turno</button><button class="btn dng" onclick="abort()">Abbandona</button></div></div>';
+  return h;
+}
+function vSetup(){
+  var h='<div class="card"><h2>Nuova partita</h2><div class="mu" style="margin-bottom:10px">Seleziona chi gioca</div><div class="chips">';
+  S.players.forEach(function(p,i){h+='<button class="chip'+(S.sel.indexOf(p)>-1?" on":"")+'" onclick="tog('+i+')">'+esc(p)+'</button>'});
+  h+='</div><div class="in" style="margin-top:14px"><label>Quota di fine gioco</label><input type="number" inputmode="numeric" value="'+S.limit+'" onchange="S.limit=Math.max(1,parseInt(this.value,10)||100);save()"></div><div class="row"><button class="btn" onclick="start()"'+((S.sel.length<2||(locked&&!pin()))?" disabled":"")+'>Inizia ('+S.sel.length+')</button></div></div>';
+  if(!S.players.length)h+='<div class="mu">Aggiungi i giocatori dalla scheda Giocatori.</div>';
+  return h;
+}
+function vOver(){
+  var g=over.game,t=totals(g),r=ranks(t),w=g.ids.filter(function(_,i){return r[i]===1});
+  var order=g.ids.map(function(_,i){return i}).sort(function(a,b){return t[a]-t[b]});
+  var h='<div class="card win"><div class="mu">'+(w.length>1?"Vincono a pari merito":"Vince")+'</div><b>🏆 '+esc(w.join(" e "))+'</b><div class="mu">con '+Math.min.apply(null,t)+' punti in '+(over.n||g.rounds.length)+' turni</div></div>';
+  h+='<div class="card"><h2>Classifica finale</h2><table><tr><th>#</th><th>Giocatore</th><th>Punti</th></tr>';
+  order.forEach(function(i){h+='<tr><td class="'+(r[i]===1?"p1":"")+'">'+r[i]+'</td><td>'+esc(g.ids[i])+'</td><td><b>'+t[i]+'</b></td></tr>'});
+  h+='</table></div><button class="btn" onclick="over=null;render()">Nuova partita</button>';
+  return h;
+}
+function tog(i){var p=S.players[i],k=S.sel.indexOf(p);k>-1?S.sel.splice(k,1):S.sel.push(p);save();render()}
+function start(){
+  S.game={ids:S.players.filter(function(p){return S.sel.indexOf(p)>-1}),rounds:[],limit:S.limit||100};draft={};save();live();render();
+}
+function addRound(){
+  var g=S.game,r=g.ids.map(function(_,i){var v=parseInt(document.getElementById("s"+i).value,10);return isNaN(v)?0:v});
+  g.rounds.push(r);draft={};
+  var t=totals(g);
+  if(t.some(function(x){return x>=(g.limit||100)}))return finish();
+  save();live();render();
+}
+function setLim(v){S.game.limit=Math.max(1,parseInt(v,10)||100);S.limit=S.game.limit;save();live();render()}
+function undo(){S.game.rounds.pop();draft={};save();live();render()}
+function abort(){if(confirm("Abbandonare la partita? Non verrà salvata nello storico.")){S.game=null;draft={};sync("clearLive",{});save();render()}}
+function finish(){
+  var g=S.game,t=totals(g),r=ranks(t);
+  S.history.push({id:uid(),d:Date.now(),l:g.limit||100,n:g.rounds.length,p:g.ids.map(function(nm,i){return{name:nm,s:t[i],pos:r[i]}})});
+  sync("addGame",{game:S.history[S.history.length-1]});sync("clearLive",{});S.live=null;over={game:g};S.game=null;draft={};save();render();
+}
+
+function stats(){
+  var m={};
+  S.history.forEach(function(h){h.p.forEach(function(x){
+    var o=m[x.name]||(m[x.name]={name:x.name,g:0,w:0,sum:0,best:1e9,worst:-1e9,pos:0,rounds:0});
+    o.g++;o.sum+=x.s;o.pos+=x.pos;o.rounds+=h.n;if(x.pos===1)o.w++;
+    o.best=Math.min(o.best,x.s);o.worst=Math.max(o.worst,x.s)})});
+  return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return b.w-a.w||(b.w/b.g)-(a.w/a.g)||a.sum/a.g-b.sum/b.g});
+}
+function vHist(){
+  if(!S.history.length)return '<div class="card mu">Nessuna partita conclusa ancora. Le statistiche appariranno qui.</div>';
+  var st=stats(),h='<div class="card"><h2>Statistiche · '+S.history.length+' partite</h2><div class="sc"><table><tr><th>#</th><th>Giocatore</th><th>Vitt.</th><th>Part.</th><th>% vitt.</th><th>Media</th><th>Min</th><th>Max</th><th>Pos. med.</th></tr>';
+  st.forEach(function(o,i){h+='<tr><td class="'+(i===0?"p1":"")+'">'+(i+1)+'</td><td>'+esc(o.name)+'</td><td><b>'+o.w+'</b></td><td>'+o.g+'</td><td>'+Math.round(100*o.w/o.g)+'%</td><td>'+(o.sum/o.g).toFixed(1)+'</td><td>'+o.best+'</td><td>'+o.worst+'</td><td>'+(o.pos/o.g).toFixed(1)+'</td></tr>'});
+  h+='</table></div><div class="mu" style="margin-top:8px">Media, min e max sono i punteggi finali. Posizione media: più bassa è meglio.</div></div>';
+  h+='<div class="card"><h2>Partite</h2>';
+  S.history.slice().reverse().forEach(function(x,k){
+    var idx=S.history.length-1-k,ws=x.p.filter(function(y){return y.pos===1}).map(function(y){return y.name}).join(", ");
+    var dt=new Date(x.d).toLocaleDateString("it-IT",{day:"numeric",month:"short",year:"numeric"});
+    h+='<div class="gh"><div><b>🏆 '+esc(ws)+'</b><div class="mu">'+dt+' · '+x.n+' turni · quota '+(x.l||100)+' · '+x.p.slice().sort(function(a,b){return a.s-b.s}).map(function(y){return esc(y.name)+" "+y.s}).join(", ")+'</div></div><button class="x" onclick="delG('+idx+')" aria-label="Elimina">✕</button></div>'});
+  return h+'</div>';
+}
+function delG(i){if(confirm("Eliminare questa partita dallo storico?")){var g=S.history.splice(i,1)[0];sync("delGame",{id:g.id});save();render()}}
+
+function vPlayers(){
+  var h='<div class="card"><h2>Elenco giocatori</h2>';
+  S.players.forEach(function(p,i){h+='<div class="gh"><span>'+esc(p)+'</span><span><button class="x" onclick="renP('+i+')" aria-label="Rinomina">✏️</button><button class="x" onclick="delP('+i+')" aria-label="Rimuovi">✕</button></span></div>'});
+  h+='<div class="row"><input type="text" id="np" placeholder="Nuovo nome" onkeydown="if(event.key===\'Enter\')addP()"><button class="btn" style="flex:0 0 auto;width:auto" onclick="addP()">Aggiungi</button></div></div>';
+  h+='<div class="card"><h2>Google Sheet</h2><div class="mu">'+(api()?"Collegato: lo storico è nel tuo foglio Google.":"Non collegato: i dati restano solo su questo dispositivo.")+'</div><div class="in" style="margin-top:8px"><input type="text" id="au" placeholder="URL dell’app web (…/exec)" value="'+esc(api())+'"></div><div class="in"><input type="text" id="ap" placeholder="PIN (se l’hai impostato)" value="'+esc(pin())+'"></div><div class="row"><button class="btn" onclick="setApi()">Collega</button><button class="btn sec" onclick="shareLink()">Copia link amici</button></div><div class="row"><button class="btn sec" onclick="exp()">Esporta CSV</button></div></div>';
+  return h;
+}
+function addP(){
+  var v=document.getElementById("np").value.trim();
+  if(v&&S.players.indexOf(v)<0){S.players.push(v);sync("addPlayer",{name:v});save()}
+  render();
+}
+function delP(i){if(confirm("Rimuovere "+S.players[i]+" dall’elenco? Lo storico resta.")){var p=S.players.splice(i,1)[0];sync("delPlayer",{name:p});S.sel=S.sel.filter(function(x){return x!==p});save();render()}}
+function renP(i){
+  var o=S.players[i],v=prompt("Nuovo nome per "+o+":",o);
+  if(v===null)return;v=v.trim();if(!v||v===o)return;
+  if(S.players.indexOf(v)>-1){alert("Esiste già un giocatore con questo nome");return}
+  S.players[i]=v;sync("renPlayer",{from:o,to:v});
+  S.sel=S.sel.map(function(x){return x===o?v:x});
+  if(S.game)S.game.ids=S.game.ids.map(function(x){return x===o?v:x});
+  S.history.forEach(function(h){h.p.forEach(function(x){if(x.name===o)x.name=v})});
+  save();render();
+}
+function bk(){var t=JSON.stringify(S);if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){alert("Backup copiato negli appunti: incollalo in una nota")},function(){prompt("Copia:",t)})}else prompt("Copia:",t)}
+function rs(){var t=prompt("Incolla il backup:");if(!t)return;try{var o=JSON.parse(t);if(!o.players||!o.history)throw 0;if(confirm("Sostituire i dati attuali con il backup?")){S=Object.assign({players:[],game:null,history:[],sel:[],limit:100},o);save();render()}}catch(e){alert("Backup non valido")}}
+function reset(){if(confirm("Cancellare tutto lo storico delle partite?")){S.history=[];save();render()}}
+function exp(){
+  var rows=["data;turni;giocatore;punti;posizione"];
+  S.history.forEach(function(h){h.p.forEach(function(x){rows.push([new Date(h.d).toISOString().slice(0,10),h.n,x.name,x.s,x.pos].join(";"))})});
+  var t=rows.join("\n");
+  if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){alert("Storico copiato negli appunti (CSV)")},function(){prompt("Copia:",t)})}else prompt("Copia:",t);
+}
+banner();render();pull();setInterval(function(){if(!document.hidden)pull()},10000);document.addEventListener("visibilitychange",function(){if(!document.hidden)pull()});
+</script>
+</body>
+</html>
